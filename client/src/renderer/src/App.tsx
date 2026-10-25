@@ -8,6 +8,10 @@ import { Sidebar } from './components/Sidebar';
 import { TerminalDock } from './components/Terminal';
 import { HomeView } from './views/HomeView';
 import { CreateView } from './views/CreateView';
+import { VerifyView } from './views/VerifyView';
+import { SendView } from './views/SendView';
+import { GuideView } from './views/GuideView';
+import { TroubleshootView } from './views/TroubleshootView';
 import { SettingsView } from './views/SettingsView';
 
 interface NavItem {
@@ -20,6 +24,10 @@ function navItems(): NavItem[] {
   return [
     { id: 'home', label: 'Home', icon: <HomeIcon /> },
     { id: 'create', label: 'Create image', icon: <CreateIcon /> },
+    { id: 'verify', label: 'Verify', icon: <VerifyIcon /> },
+    { id: 'send', label: 'Send payload', icon: <SendIcon /> },
+    { id: 'guide', label: 'Guide', icon: <GuideIcon /> },
+    { id: 'troubleshoot', label: 'Troubleshooting', icon: <WarnIcon /> },
     { id: 'settings', label: 'Settings', icon: <SettingsIcon /> },
   ];
 }
@@ -70,6 +78,10 @@ export function App() {
             <HomeView appInfo={appInfo} settings={settings} env={env} onNavigate={setView} onRefreshEnv={refreshEnv} />
           )}
           {view === 'create' && <CreateView settings={settings} env={env} onStart={startJob} />}
+          {view === 'verify' && <VerifyView settings={settings} />}
+          {view === 'send' && <SendView settings={settings} onChange={updateSettings} />}
+          {view === 'guide' && <GuideView />}
+          {view === 'troubleshoot' && <TroubleshootView />}
           {view === 'settings' && (
             <SettingsView settings={settings} appInfo={appInfo} env={env} onChange={updateSettings} onRefreshEnv={refreshEnv} />
           )}
@@ -113,6 +125,41 @@ function CreateIcon() {
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
       <circle cx="8" cy="8" r="5.5" stroke="currentColor" strokeWidth="1.4" />
       <path d="M8 5.5v5M5.5 8h5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function VerifyIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M2.5 8.5l3.5 3.5 7.5-8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function SendIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M2 8l12-5.5L9.5 14 8 9.5 2 8z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function GuideIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M3 2.5h7.5L13 5v8.5H3z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+      <path d="M5.5 6.5h5M5.5 9h5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function WarnIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M8 2.5l6 11H2l6-11z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+      <path d="M8 7v3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      <circle cx="8" cy="11.8" r="0.7" fill="currentColor" />
     </svg>
   );
 }
