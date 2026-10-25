@@ -65,6 +65,16 @@ function createWindow(): void {
     return { action: 'deny' };
   });
 
+  // setWindowOpenHandler only covers new windows; links without a target
+  // would otherwise navigate this window to a remote page that still has
+  // access to the preload API. Keep in-window navigation on the app itself
+  // and hand approved HTTPS links to the system browser instead.
+  win.webContents.on('will-navigate', (event, url) => {
+    if (url === win.webContents.getURL()) return;
+    event.preventDefault();
+    if (/^https:\/\//.test(url)) void shell.openExternal(url);
+  });
+
   const devServerUrl =
     typeof MAIN_WINDOW_VITE_DEV_SERVER_URL !== 'undefined' ? MAIN_WINDOW_VITE_DEV_SERVER_URL : undefined;
   const rendererName = typeof MAIN_WINDOW_VITE_NAME !== 'undefined' ? MAIN_WINDOW_VITE_NAME : 'main';
