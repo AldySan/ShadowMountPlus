@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { contextBridge, ipcRenderer } from 'electron';
 import { IPC } from '../shared/ipc-channels';
-import type { SmpApi } from '../shared/types';
+import type { JobEvent, SmpApi, ToolEvent } from '../shared/types';
 
 const api: SmpApi = {
   platform: process.platform,
@@ -20,6 +20,34 @@ const api: SmpApi = {
     showItem: (target) => {
       void ipcRenderer.invoke(IPC.ShellShowItem, target);
     },
+  },
+  clipboard: {
+    writeText: (text) => ipcRenderer.invoke(IPC.ClipboardWrite, text).then(() => undefined),
+  },
+  env: {
+    detect: () => ipcRenderer.invoke(IPC.EnvDetect),
+  },
+  folders: {
+    stat: (path) => ipcRenderer.invoke(IPC.FolderStat, path),
+  },
+  jobs: {
+    preview: (spec) => ipcRenderer.invoke(IPC.JobPreview, spec),
+    run: (spec) => ipcRenderer.invoke(IPC.JobRun, spec),
+    cancel: (jobId) => ipcRenderer.invoke(IPC.JobCancel, jobId),
+  },
+  tools: {
+    download: (tool, assetName) => ipcRenderer.invoke(IPC.ToolDownload, tool, assetName),
+    listAssets: (tool) => ipcRenderer.invoke(IPC.ToolListAssets, tool),
+  },
+  onJobEvent: (callback) => {
+    const listener = (_event: Electron.IpcRendererEvent, payload: JobEvent) => callback(payload);
+    ipcRenderer.on(IPC.EventJob, listener);
+    return () => ipcRenderer.removeListener(IPC.EventJob, listener);
+  },
+  onToolEvent: (callback) => {
+    const listener = (_event: Electron.IpcRendererEvent, payload: ToolEvent) => callback(payload);
+    ipcRenderer.on(IPC.EventTool, listener);
+    return () => ipcRenderer.removeListener(IPC.EventTool, listener);
   },
 };
 

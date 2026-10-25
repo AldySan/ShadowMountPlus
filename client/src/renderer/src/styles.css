@@ -113,13 +113,8 @@ code,
 }
 
 /* ---------- App layout ---------- */
-
-.app {
-  display: grid;
-  grid-template-columns: var(--sidebar-width) 1fr;
-  height: 100vh;
-  overflow: hidden;
-}
+/* The full layout (sidebar + content + terminal dock) is defined near the
+   end of this file, together with the dock styles. */
 
 .content {
   overflow-y: auto;
@@ -541,4 +536,374 @@ input::placeholder {
 
 .dot.err {
   background: var(--err);
+}
+
+/* ---------- App layout with terminal dock ---------- */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app-main {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) 1fr;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ---------- Terminal dock ---------- */
+
+.terminal {
+  border-top: 1px solid var(--border);
+  background: var(--terminal-bg);
+  display: flex;
+  flex-direction: column;
+  max-height: 40vh;
+}
+
+.terminal.collapsed {
+  max-height: none;
+}
+
+.terminal-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.02);
+  flex: none;
+}
+
+.terminal-toggle {
+  border: 0;
+  background: transparent;
+  color: var(--terminal-text);
+  cursor: pointer;
+  font-size: 10px;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.terminal-toggle:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.terminal-title {
+  color: var(--terminal-text);
+  font-weight: 600;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.terminal-select {
+  font: inherit;
+  font-size: 12px;
+  font-family: var(--mono);
+  background: transparent;
+  color: var(--terminal-text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+.terminal-select option {
+  color: #111;
+}
+
+.terminal-status {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 8px;
+  border-radius: 99px;
+  white-space: nowrap;
+}
+
+.terminal-status.status-running {
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 14%, transparent);
+}
+
+.terminal-status.status-success {
+  color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 14%, transparent);
+}
+
+.terminal-status.status-error,
+.terminal-status.status-cancelled {
+  color: var(--err);
+  background: color-mix(in srgb, var(--err) 14%, transparent);
+}
+
+.terminal-time {
+  color: var(--text-faint);
+  font-size: 11px;
+  font-family: var(--mono);
+  min-width: 52px;
+  text-align: right;
+}
+
+.terminal-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+
+.terminal-actions .btn {
+  font-size: 11px;
+  padding: 3px 9px;
+  color: var(--terminal-text);
+  background: transparent;
+  border-color: var(--border-strong);
+}
+
+.terminal-body {
+  overflow-y: auto;
+  padding: 10px 14px;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--terminal-text);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.terminal.collapsed .terminal-body {
+  display: none;
+}
+
+.t-line {
+  min-height: 1.2em;
+}
+
+.t-rule {
+  color: var(--text-faint);
+  margin-top: 6px;
+}
+
+.t-cmd {
+  color: #7ee787;
+}
+
+.t-note {
+  color: var(--warn);
+  margin-top: 6px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- Structure badges ---------- */
+
+.struct-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: -6px 0 16px;
+  max-width: 560px;
+}
+
+.struct-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--text-dim);
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  padding: 2px 10px;
+}
+
+.struct-badge.accent {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+}
+
+.struct-badge.bad {
+  color: var(--err);
+}
+
+/* ---------- Run row & command preview ---------- */
+
+.run-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 4px;
+}
+
+.run-row .field-hint {
+  margin: 0;
+}
+
+.cmd-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cmd-step-desc {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 3px;
+}
+
+.cmd-step code {
+  display: block;
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.badge {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--warn);
+  border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--border));
+  border-radius: 4px;
+  padding: 0 5px;
+}
+
+/* ---------- Checkbox ---------- */
+
+.checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.checkbox input {
+  accent-color: var(--accent);
+}
+
+/* ---------- Home environment list ---------- */
+
+.card-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.card-head-row h2 {
+  margin: 0;
+}
+
+.quick-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.env-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.env-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+.env-label {
+  flex: none;
+  width: 168px;
+}
+
+.env-detail {
+  color: var(--text-faint);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kv-slim {
+  margin-top: 12px;
+}
+
+/* ---------- Tool rows ---------- */
+
+.tool-row {
+  padding: 14px 0;
+  border-top: 1px solid var(--border);
+}
+
+.tool-row:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.tool-row .field {
+  margin-bottom: 0;
+  margin-top: 8px;
+}
+
+.tool-row-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tool-name {
+  font-weight: 600;
+  flex: none;
+}
+
+.tool-detail {
+  flex: 1;
+  color: var(--text-faint);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tool-progress {
+  margin-top: 10px;
+}
+
+.progress-track {
+  height: 6px;
+  border-radius: 4px;
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 150ms ease;
+}
+
+.error-text {
+  color: var(--err);
 }
