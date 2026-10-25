@@ -520,6 +520,12 @@ kstuff.elf
 
 ---
 
+## Desktop client
+
+A cross-platform companion app lives in [`client/`](client/README.md). It builds `.ffpkg`, `.exfat` and `.ffpfsc` images using the documented profiles (running this repository's builder scripts from your own checkout), verifies existing images, and sends `shadowmountplus.elf` to port 9021 from Windows and Linux.
+
+---
+
 ## Troubleshooting
 
 If a game is not mounted:
