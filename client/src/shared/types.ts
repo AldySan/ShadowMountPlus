@@ -11,6 +11,8 @@ export type InnerFormat = 'exfat' | 'pfs';
 
 export type InodeDensity = 'auto' | '262144' | '131072' | '65536';
 
+export type DetectedImageKind = 'exfat' | 'ufs2' | 'ufs1' | 'pfs' | 'unknown';
+
 export interface FileFilter {
   name: string;
   extensions: string[];
@@ -87,6 +89,23 @@ export interface FolderStat {
   totalBytes: number;
 }
 
+export interface FileReport {
+  path: string;
+  size: number;
+  extension: string;
+  detected: DetectedImageKind;
+  /** Describes what was matched and what the header implies. */
+  notes: string[];
+  clusterSize?: number;
+  alignment64k: boolean;
+  extensionMatches: boolean;
+}
+
+export interface InspectResult {
+  tool: 'mkpfs' | 'ufs2tool';
+  output: string;
+}
+
 export interface BuildSpec {
   format: ImageFormat;
   sourceDir: string;
@@ -119,6 +138,14 @@ export type ToolEvent =
   | { tool: string; type: 'progress'; received: number; total: number }
   | { tool: string; type: 'done'; path?: string; version?: string; error?: string };
 
+export type SendEvent =
+  | { sendId: string; type: 'connecting' }
+  | { sendId: string; type: 'connected' }
+  | { sendId: string; type: 'progress'; sent: number; total: number }
+  | { sendId: string; type: 'sent'; sent: number }
+  | { sendId: string; type: 'failed'; message: string }
+  | { sendId: string; type: 'cancelled' };
+
 export interface ReleaseAsset {
   name: string;
   size: number;
@@ -150,6 +177,10 @@ export interface SmpApi {
   folders: {
     stat(path: string): Promise<FolderStat | null>;
   };
+  verify: {
+    file(path: string): Promise<FileReport | null>;
+    inspect(path: string): Promise<InspectResult | null>;
+  };
   jobs: {
     preview(spec: BuildSpec): Promise<{ title: string; steps: JobStepPreview[] }>;
     run(spec: BuildSpec): Promise<{ jobId: string }>;
@@ -158,7 +189,13 @@ export interface SmpApi {
   tools: {
     download(tool: 'mkpfs' | 'ufs2tool', assetName?: string): Promise<{ ok: boolean; path?: string; error?: string }>;
     listAssets(tool: 'mkpfs' | 'ufs2tool'): Promise<{ version: string; assets: ReleaseAsset[] }>;
+    downloadPayload(): Promise<{ ok: boolean; path?: string; error?: string }>;
+  };
+  send: {
+    payload(opts: { host: string; port: number; elfPath: string }): Promise<{ sendId: string }>;
+    cancel(sendId: string): Promise<boolean>;
   };
   onJobEvent(callback: (event: JobEvent) => void): () => void;
   onToolEvent(callback: (event: ToolEvent) => void): () => void;
+  onSendEvent(callback: (event: SendEvent) => void): () => void;
 }

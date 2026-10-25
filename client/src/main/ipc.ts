@@ -1,15 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { BrowserWindow, app, clipboard, dialog, ipcMain, shell } from 'electron';
+import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { IPC } from '../shared/ipc-channels';
-import type { BuildSpec, JobEvent, ToolEvent } from '../shared/types';
+import type { BuildSpec, JobEvent, SendEvent, ToolEvent } from '../shared/types';
 import { loadSettings, saveSettings } from './lib/settings';
 import { detectEnvironment, findExecutable, repoScripts, resolveTools } from './lib/env';
 import { buildSteps, jobTitle, stepsToPreview } from './lib/recipes';
 import { runJob, RunningJob } from './lib/runner';
-import { statFolder } from './lib/verifier';
+import { detectImage, statFolder } from './lib/verifier';
 import { downloadTool, listAssets } from './lib/toolmanager';
+import { ensurePayload, sendPayload } from './lib/payload';
 
 const IS_WINDOWS = process.platform === 'win32';
 
@@ -184,5 +186,108 @@ export function registerIpc(): void {
       emit({ tool, type: 'done', error: message });
       return { ok: false, error: message };
     }
+  });
+
+  /* ---------- verification ---------- */
+
+  ipcMain.handle(IPC.VerifyFile, (_event, target) => detectImage(asString(target)));
+
+  ipcMain.handle(IPC.VerifyInspect, async (event, target) => {
+    const file = asString(target);
+    if (!file || !fs.existsSync(file)) return null;
+
+    const report = detectImage(file);
+    const extension = path.extname(file).toLowerCase();
+    const resolved = resolveTools(loadSettings());
+
+    // Choose the inspector by detected kind, falling back to the extension.
+    const wantsPfs =
+      report?.detected === 'pfs' || extension === '.ffpfsc' || extension === '.ffpfs' || report?.detected === 'exfat';
+    const wantsUfs = report?.detected === 'ufs2' || report?.detected === 'ufs1' || extension === '.ffpkg';
+
+    const sender = BrowserWindow.fromWebContents(event.sender);
+    const notify = (chunk: string) => {
+      if (sender && !sender.isDestroyed()) {
+        sender.webContents.send(IPC.EventJob, { jobId: `inspect-${Date.now()}`, type: 'data', chunk } as JobEvent);
+      }
+    };
+
+    const capture = (cmd: string, args: string[], env?: Record<string, string>): Promise<string> =>
+      new Promise((resolve, reject) => {
+        const child = spawn(cmd, args, { windowsHide: true, env: env ? { ...process.env, ...env } : process.env });
+        let out = '';
+        child.stdout?.on('data', (d: Buffer) => {
+          out += d.toString();
+        });
+        child.stderr?.on('data', (d: Buffer) => {
+          out += d.toString();
+        });
+        child.on('error', (error) => reject(error));
+        child.on('close', () => resolve(out));
+      });
+
+    if (wantsPfs && resolved.mkpfs.origin !== 'missing') {
+      const output = await capture(
+        resolved.mkpfs.cmd,
+        [...resolved.mkpfs.prefix, 'inspect', file],
+        resolved.mkpfs.env,
+      );
+      return { tool: 'mkpfs', output: output.slice(0, 20000) };
+    }
+    if (wantsUfs && resolved.ufs2tool.origin !== 'missing') {
+      const output = await capture(resolved.ufs2tool.cmd, [...resolved.ufs2tool.prefix, 'info', file]);
+      return { tool: 'ufs2tool', output: output.slice(0, 20000) };
+    }
+
+    // Nothing runnable: report why instead of failing silently.
+    const which = wantsPfs ? 'MkPFS' : wantsUfs ? 'UFS2Tool' : 'an inspector';
+    const output = `${which} is not available for this file. Download it from Settings, Tools.`;
+    notify(output);
+    return { tool: wantsPfs ? 'mkpfs' : 'ufs2tool', output };
+  });
+
+  /* ---------- payload ---------- */
+
+  ipcMain.handle(IPC.PayloadDownload, async () => {
+    try {
+      const elfPath = await ensurePayload(() => undefined);
+      return { ok: true, path: elfPath };
+    } catch (error) {
+      return { ok: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  const sends = new Map<string, { start(): Promise<void>; cancel(): void }>();
+
+  ipcMain.handle(IPC.SendPayload, async (event, raw) => {
+    const opts = raw as { host?: string; port?: number; elfPath?: string };
+    const host = asString(opts?.host);
+    const port = Number(opts?.port ?? 9021);
+    if (!host) throw new Error('Console address is required');
+    if (!Number.isInteger(port) || port <= 0 || port > 65535) throw new Error('Invalid port');
+
+    const elfPath = asString(opts?.elfPath);
+    if (!elfPath || !fs.existsSync(elfPath)) {
+      throw new Error('Payload file not found — use the built-in download or pick a local shadowmountplus.elf');
+    }
+
+    const sender = BrowserWindow.fromWebContents(event.sender);
+    const sendId = `send-${++jobCounter}`;
+    const emit = (payload: SendEvent) => {
+      if (!sender || sender.isDestroyed()) return;
+      sender.webContents.send(IPC.EventSend, payload);
+    };
+
+    const active = sendPayload(sendId, host, port, emit);
+    sends.set(sendId, active);
+    void active.start().finally(() => sends.delete(sendId));
+    return { sendId };
+  });
+
+  ipcMain.handle(IPC.SendCancel, (_event, sendId) => {
+    const active = sends.get(asString(sendId));
+    if (!active) return false;
+    active.cancel();
+    return true;
   });
 }
