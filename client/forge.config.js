@@ -40,7 +40,14 @@ const config = {
     {
       name: '@electron-forge/maker-rpm',
       platforms: ['linux'],
-      config: { options: LINUX_PACKAGES },
+      config: {
+        options: {
+          ...LINUX_PACKAGES,
+          // Upstream spec template breaks with rpm 4.17+ scriptlet cwd
+          // (electron/forge#3701); use the patched copy in forge/rpm-spec.ejs.
+          specTemplate: 'forge/rpm-spec.ejs',
+        },
+      },
     },
     {
       name: '@reforged/maker-appimage',
