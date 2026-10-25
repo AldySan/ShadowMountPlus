@@ -51,11 +51,20 @@ export function App() {
 
   useTheme(settings?.theme ?? 'auto');
 
-  const updateSettings = useCallback(async (patch: Partial<AppSettings>) => {
-    const next = await smp.settings.set(patch);
-    setSettings(next);
-    refreshEnv();
-  }, [refreshEnv]);
+  const updateSettings = useCallback(
+    (patch: Partial<AppSettings>) => {
+      // Optimistic update: PathField is a controlled input, so the visible
+      // value must track each keystroke immediately instead of waiting for
+      // the settings save to resolve. The persisted result reconciles the
+      // state once the save completes.
+      setSettings((current) => (current ? { ...current, ...patch } : current));
+      void smp.settings.set(patch).then((next) => {
+        setSettings(next);
+        refreshEnv();
+      });
+    },
+    [refreshEnv],
+  );
 
   const startJob = useCallback(
     async (spec: BuildSpec) => {
