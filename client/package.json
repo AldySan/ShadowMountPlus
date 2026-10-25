@@ -16,9 +16,11 @@
     "start": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "devDependencies": {
+    "adm-zip": "^0.6.1",
     "@electron-forge/cli": "^8.0.1",
     "@electron-forge/maker-deb": "^8.0.1",
     "@electron-forge/maker-rpm": "^8.0.1",
@@ -27,6 +29,7 @@
     "@electron-forge/plugin-vite": "^8.0.1",
     "@electron-forge/plugin-fuses": "^8.0.1",
     "@reforged/maker-appimage": "^6.0.0",
+    "@types/adm-zip": "^0.5.7",
     "@types/electron-squirrel-startup": "^1.0.2",
     "@types/node": "^26.6.5",
     "@types/react": "^19.3.0",
@@ -37,6 +40,7 @@
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "typescript": "^5.9.3",
-    "vite": "^8.3.5"
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
   }
 }

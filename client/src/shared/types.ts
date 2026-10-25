@@ -3,6 +3,14 @@
 
 export type ThemeMode = 'auto' | 'dark' | 'light';
 
+export type PrivilegeMode = 'auto' | 'pkexec' | 'direct';
+
+export type ImageFormat = 'exfat' | 'ufs2' | 'ffpfsc';
+
+export type InnerFormat = 'exfat' | 'pfs';
+
+export type InodeDensity = 'auto' | '262144' | '131072' | '65536';
+
 export interface FileFilter {
   name: string;
   extensions: string[];
@@ -16,7 +24,12 @@ export interface AppSettings {
     mkpfs: string;
     ufs2tool: string;
   };
-  privilege: 'auto' | 'pkexec' | 'direct';
+  /** Resolved paths of tools downloaded through the built-in tool manager. */
+  toolCache: {
+    mkpfs: string;
+    ufs2tool: string;
+  };
+  privilege: PrivilegeMode;
   defaultOutDir: string;
   ps5: {
     host: string;
@@ -32,6 +45,84 @@ export interface AppInfo {
   platform: string;
   arch: string;
   userData: string;
+}
+
+export interface ToolCheck {
+  id: string;
+  label: string;
+  found: boolean;
+  path?: string;
+  version?: string;
+  detail?: string;
+  requiredFor: ImageFormat[];
+  fix?: string;
+}
+
+export interface EnvReport {
+  platform: string;
+  isWindows: boolean;
+  isLinux: boolean;
+  repoPath: string;
+  repoOk: boolean;
+  repoDetail?: string;
+  tools: ToolCheck[];
+  privilege: {
+    mode: PrivilegeMode;
+    pkexecAvailable: boolean;
+    runningAsRoot: boolean;
+  };
+}
+
+export interface FolderStat {
+  path: string;
+  exists: boolean;
+  ebootBin: boolean;
+  paramJson: boolean;
+  paramInfo?: {
+    titleId?: string;
+    contentId?: string;
+  };
+  fileCount: number;
+  dirCount: number;
+  totalBytes: number;
+}
+
+export interface BuildSpec {
+  format: ImageFormat;
+  sourceDir: string;
+  outputFile: string;
+  /** For ffpfsc: the nested image format packed inside the container. */
+  innerFormat?: InnerFormat;
+  /** For ufs2: bytes-per-inode policy. */
+  inodeDensity?: InodeDensity;
+  /** Windows-only exFAT volume label. */
+  label?: string;
+  /** Keep the intermediate nested image after packing an ffpfsc. */
+  keepIntermediate?: boolean;
+}
+
+export interface JobStepPreview {
+  description: string;
+  command: string;
+  privileged: boolean;
+}
+
+export type JobEvent =
+  | { jobId: string; type: 'start'; title: string; steps: number }
+  | { jobId: string; type: 'step'; index: number; description: string; command: string }
+  | { jobId: string; type: 'data'; chunk: string }
+  | { jobId: string; type: 'exit'; code: number; ok: boolean; note?: string }
+  | { jobId: string; type: 'cancelled' };
+
+export type ToolEvent =
+  | { tool: string; type: 'status'; text: string }
+  | { tool: string; type: 'progress'; received: number; total: number }
+  | { tool: string; type: 'done'; path?: string; version?: string; error?: string };
+
+export interface ReleaseAsset {
+  name: string;
+  size: number;
+  downloadUrl: string;
 }
 
 export interface SmpApi {
@@ -50,4 +141,24 @@ export interface SmpApi {
     openPath(target: string): Promise<string>;
     showItem(target: string): void;
   };
+  clipboard: {
+    writeText(text: string): Promise<void>;
+  };
+  env: {
+    detect(): Promise<EnvReport>;
+  };
+  folders: {
+    stat(path: string): Promise<FolderStat | null>;
+  };
+  jobs: {
+    preview(spec: BuildSpec): Promise<{ title: string; steps: JobStepPreview[] }>;
+    run(spec: BuildSpec): Promise<{ jobId: string }>;
+    cancel(jobId: string): Promise<boolean>;
+  };
+  tools: {
+    download(tool: 'mkpfs' | 'ufs2tool', assetName?: string): Promise<{ ok: boolean; path?: string; error?: string }>;
+    listAssets(tool: 'mkpfs' | 'ufs2tool'): Promise<{ version: string; assets: ReleaseAsset[] }>;
+  };
+  onJobEvent(callback: (event: JobEvent) => void): () => void;
+  onToolEvent(callback: (event: ToolEvent) => void): () => void;
 }

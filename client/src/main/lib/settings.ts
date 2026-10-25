@@ -8,6 +8,7 @@ const DEFAULTS: AppSettings = {
   theme: 'auto',
   repoPath: '',
   toolPaths: { mkpfs: '', ufs2tool: '' },
+  toolCache: { mkpfs: '', ufs2tool: '' },
   privilege: 'auto',
   defaultOutDir: '',
   ps5: { host: '', port: 9021 },
@@ -23,6 +24,7 @@ function merge(current: AppSettings, patch: Partial<AppSettings>): AppSettings {
     ...current,
     ...patch,
     toolPaths: { ...current.toolPaths, ...(patch.toolPaths ?? {}) },
+    toolCache: { ...current.toolCache, ...(patch.toolCache ?? {}) },
     ps5: { ...current.ps5, ...(patch.ps5 ?? {}) },
   };
 }
@@ -33,7 +35,12 @@ export function loadSettings(): AppSettings {
     const parsed = JSON.parse(raw) as Partial<AppSettings>;
     return merge({ ...DEFAULTS }, parsed);
   } catch {
-    return { ...DEFAULTS, toolPaths: { ...DEFAULTS.toolPaths }, ps5: { ...DEFAULTS.ps5 } };
+    return {
+      ...DEFAULTS,
+      toolPaths: { ...DEFAULTS.toolPaths },
+      toolCache: { ...DEFAULTS.toolCache },
+      ps5: { ...DEFAULTS.ps5 },
+    };
   }
 }
 
